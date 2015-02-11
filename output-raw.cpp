@@ -1,6 +1,58 @@
 #include <iostream>
 #include <stdint.h>
 
+
+class Vector {
+  private:
+    float x;
+    float y;
+    float z;
+  public:
+    Vector(float x, float y, float z) : x(x), y(y), z(z) {}
+    Vector(const Vector & v) : x(v.x), y(v.y), z(v.z) {}
+    float dot(const Vector& v) {
+      return (x * v.x) + (y * v.y) + (z * v.z);
+    }
+    Vector operator - (const Vector& v) {
+      return Vector(
+          x - v.x,
+          y - v.y,
+          z - v.z);
+    }
+};
+
+float pixelCoordinateToWorldCoordinate(int coordinate) {
+  return ((coordinate / 32.0f) - 0.5f) * 2.0f;
+}
+
+bool rayIntersectsSphere(Vector rayOrigin, Vector rayDirection) {
+  Vector sphereCenter(0.0f, 0.0f, 1.0f);
+  float sphereRadius = 0.5f;
+  float b = rayDirection.dot(rayOrigin - sphereCenter);
+  float c = ((rayOrigin - sphereCenter).dot(rayOrigin - sphereCenter)) - (sphereRadius * sphereRadius);
+  return ((b * b) - c) >= 0;
+}
+
+void renderImage(uint8_t* pixels) {
+  uint8_t* p = pixels;
+  for(int i = 0; i < 32; ++i) {
+    for(int j = 0; j < 32; ++j) {
+      Vector rayOrigin(
+          pixelCoordinateToWorldCoordinate(j),
+          pixelCoordinateToWorldCoordinate(i),
+          0.0f);
+      Vector rayDirection(0.0f, 0.0f, 1.0f);
+      if(rayIntersectsSphere(rayOrigin, rayDirection)) {
+        *p = 0x0 & 0xFF; p++;
+        *p = 0x0 & 0xFF; p++;
+        *p = 0xFF & 0xFF; p++;
+      } else {
+        p += 3;
+      }
+    }
+  }
+}
+
 int main() {
   FILE* outputFile = fopen("output.tga", "wb");
 
@@ -26,6 +78,8 @@ int main() {
   tgaHeader[15] = (32 >> 8) & 0xFF;
   tgaHeader[16] = 24; 
   
+  renderImage(pixels);
+
   fwrite(tgaHeader, sizeof(uint8_t), 18, outputFile);
   fwrite(pixels, sizeof(uint8_t), 32 * 32 * 3, outputFile);
   fclose(outputFile);
