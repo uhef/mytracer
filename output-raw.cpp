@@ -1,6 +1,7 @@
 #include <iostream>
+#include <list>
+#include <cmath>
 #include <stdint.h>
-
 
 class Vector {
   private:
@@ -19,18 +20,42 @@ class Vector {
           y - v.y,
           z - v.z);
     }
+    Vector operator + (const Vector& v) {
+      return Vector(
+          x + v.x,
+          y + v.y,
+          z + v.z);
+    }
+    Vector operator * (float scale) {
+      return Vector(
+          x * scale,
+          y * scale,
+          z * scale);
+    }
 };
 
 float pixelCoordinateToWorldCoordinate(int coordinate) {
   return ((coordinate / 32.0f) - 0.5f) * 2.0f;
 }
 
-bool rayIntersectsSphere(Vector rayOrigin, Vector rayDirection) {
+Vector spherePoint(Vector rayOrigin, Vector rayDirection, float t) {
+  return rayOrigin + (rayDirection * t);
+}
+
+std::list<Vector> calculateSphereIntersections(Vector rayOrigin, Vector rayDirection) {
+  std::list<Vector> ret;
   Vector sphereCenter(0.0f, 0.0f, 1.0f);
   float sphereRadius = 0.5f;
   float b = rayDirection.dot(rayOrigin - sphereCenter);
   float c = ((rayOrigin - sphereCenter).dot(rayOrigin - sphereCenter)) - (sphereRadius * sphereRadius);
-  return ((b * b) - c) >= 0;
+  float discriminant = ((b * b) - c);
+  if (discriminant >= 0) {
+    float t0 = -b - (sqrt(discriminant));
+    float t1 = -b + (sqrt(discriminant));
+    ret.push_back(spherePoint(rayOrigin, rayDirection, std::min(t0, t1)));
+    ret.push_back(spherePoint(rayOrigin, rayDirection, std::max(t0, t1)));
+  }
+  return ret;
 }
 
 void renderImage(uint8_t* pixels) {
@@ -42,7 +67,10 @@ void renderImage(uint8_t* pixels) {
           pixelCoordinateToWorldCoordinate(i),
           0.0f);
       Vector rayDirection(0.0f, 0.0f, 1.0f);
-      if(rayIntersectsSphere(rayOrigin, rayDirection)) {
+      std::list<Vector> sphereIntersections = calculateSphereIntersections(
+          rayOrigin,
+          rayDirection);
+      if(!sphereIntersections.empty()) {
         *p = 0x0 & 0xFF; p++;
         *p = 0x0 & 0xFF; p++;
         *p = 0xFF & 0xFF; p++;
