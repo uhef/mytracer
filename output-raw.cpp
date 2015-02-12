@@ -11,34 +11,34 @@ class Vector {
   public:
     Vector(float x, float y, float z) : x(x), y(y), z(z) {}
     Vector(const Vector & v) : x(v.x), y(v.y), z(v.z) {}
-    float length() {
+    float length() const {
       return sqrt(x * x + y * y + z * z);
     }
-    float dot(const Vector& v) {
+    float dot(const Vector& v) const {
       return (x * v.x) + (y * v.y) + (z * v.z);
     }
-    Vector normalized() {
+    Vector normalized() const {
       return (*this) * (1.0f / length());
     }
-    Vector operator - (const Vector& v) {
+    Vector operator - (const Vector& v) const {
       return Vector(
           x - v.x,
           y - v.y,
           z - v.z);
     }
-    Vector operator + (const Vector& v) {
+    Vector operator + (const Vector& v) const {
       return Vector(
           x + v.x,
           y + v.y,
           z + v.z);
     }
-    Vector operator * (float scale) {
+    Vector operator * (float scale) const {
       return Vector(
           x * scale,
           y * scale,
           z * scale);
     }
-    std::string toString() {
+    std::string toString() const {
       char buffer[100];
       snprintf(buffer, 100, "x: %.3f y: %.3f z: %.3f", x, y, z);
       return buffer;
