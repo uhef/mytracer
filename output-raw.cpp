@@ -45,6 +45,8 @@ class Vector {
     }
 };
 
+Vector sphereCenter(0.0f, 0.0f, -1.0f);
+
 float pixelCoordinateToWorldCoordinate(int coordinate) {
   return ((coordinate / 32.0f) - 0.5f) * 2.0f;
 }
@@ -55,7 +57,6 @@ Vector spherePoint(Vector rayOrigin, Vector rayDirection, float t) {
 
 std::list<Vector> calculateSphereIntersections(Vector rayOrigin, Vector rayDirection) {
   std::list<Vector> ret;
-  Vector sphereCenter(0.0f, 0.0f, -1.0f);
   float sphereRadius = 0.5f;
   float b = rayDirection.dot(rayOrigin - sphereCenter);
   float c = ((rayOrigin - sphereCenter).dot(rayOrigin - sphereCenter)) - (sphereRadius * sphereRadius);
@@ -71,7 +72,6 @@ std::list<Vector> calculateSphereIntersections(Vector rayOrigin, Vector rayDirec
 
 float calculateLambert(Vector intersection) {
   Vector lightPosition(0.5f, 0.5f, 0.0f);
-  Vector sphereCenter(0.0f, 0.0f, -1.0f);
   Vector lightDirection = (lightPosition - intersection).normalized();
   Vector sphereNormal = (intersection - sphereCenter).normalized();
   return std::max(0.0f, lightDirection.dot(sphereNormal));
