@@ -11,8 +11,14 @@ class Vector {
   public:
     Vector(float x, float y, float z) : x(x), y(y), z(z) {}
     Vector(const Vector & v) : x(v.x), y(v.y), z(v.z) {}
+    float length() {
+      return sqrt(x * x + y * y + z * z);
+    }
     float dot(const Vector& v) {
       return (x * v.x) + (y * v.y) + (z * v.z);
+    }
+    Vector normalized() {
+      return (*this) * (1.0f / length());
     }
     Vector operator - (const Vector& v) {
       return Vector(
@@ -44,7 +50,7 @@ Vector spherePoint(Vector rayOrigin, Vector rayDirection, float t) {
 
 std::list<Vector> calculateSphereIntersections(Vector rayOrigin, Vector rayDirection) {
   std::list<Vector> ret;
-  Vector sphereCenter(0.0f, 0.0f, 1.0f);
+  Vector sphereCenter(0.0f, 0.0f, -1.0f);
   float sphereRadius = 0.5f;
   float b = rayDirection.dot(rayOrigin - sphereCenter);
   float c = ((rayOrigin - sphereCenter).dot(rayOrigin - sphereCenter)) - (sphereRadius * sphereRadius);
@@ -58,6 +64,14 @@ std::list<Vector> calculateSphereIntersections(Vector rayOrigin, Vector rayDirec
   return ret;
 }
 
+float calculateLambert(Vector intersection) {
+  Vector lightPosition(0.5f, 0.5f, 0.0f);
+  Vector sphereCenter(0.0f, 0.0f, -1.0f);
+  Vector lightDirection = (lightPosition - intersection).normalized();
+  Vector sphereNormal = (intersection - sphereCenter).normalized();
+  return std::max(0.0f, lightDirection.dot(sphereNormal));
+}
+
 void renderImage(uint8_t* pixels) {
   uint8_t* p = pixels;
   for(int i = 0; i < 32; ++i) {
@@ -66,14 +80,15 @@ void renderImage(uint8_t* pixels) {
           pixelCoordinateToWorldCoordinate(j),
           pixelCoordinateToWorldCoordinate(i),
           0.0f);
-      Vector rayDirection(0.0f, 0.0f, 1.0f);
+      Vector rayDirection(0.0f, 0.0f, -1.0f);
       std::list<Vector> sphereIntersections = calculateSphereIntersections(
           rayOrigin,
           rayDirection);
       if(!sphereIntersections.empty()) {
+        uint8_t red = calculateLambert(sphereIntersections.front()) * 0xFF;
         *p = 0x0 & 0xFF; p++;
         *p = 0x0 & 0xFF; p++;
-        *p = 0xFF & 0xFF; p++;
+        *p = red & 0xFF; p++;
       } else {
         p += 3;
       }
