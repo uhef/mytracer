@@ -38,6 +38,11 @@ class Vector {
           y * scale,
           z * scale);
     }
+    std::string toString() {
+      char buffer[100];
+      snprintf(buffer, 100, "x: %.3f y: %.3f z: %.3f", x, y, z);
+      return buffer;
+    }
 };
 
 float pixelCoordinateToWorldCoordinate(int coordinate) {
