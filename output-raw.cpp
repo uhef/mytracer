@@ -46,7 +46,7 @@ class Vector {
     }
 };
 
-Vector sphereCenter(0.0f, 0.0f, -1.0f);
+std::list<Vector> spheres;
 
 float pixelCoordinateToWorldCoordinate(int coordinate) {
   return ((coordinate / 32.0f) - 0.5f) * 2.0f;
@@ -56,7 +56,10 @@ Vector spherePoint(Vector rayOrigin, Vector rayDirection, float t) {
   return rayOrigin + (rayDirection * t);
 }
 
-std::pair<bool, Vector> calculateSphereIntersection(Vector rayOrigin, Vector rayDirection) {
+std::pair<bool, Vector> calculateSphereIntersection(
+    Vector sphereCenter,
+    Vector rayOrigin,
+    Vector rayDirection) {
   float sphereRadius = 0.5f;
   Vector l = sphereCenter - rayOrigin;
   float s = l.dot(rayDirection);
@@ -72,7 +75,7 @@ std::pair<bool, Vector> calculateSphereIntersection(Vector rayOrigin, Vector ray
   return std::make_pair(true, spherePoint(rayOrigin, rayDirection, t));
 }
 
-float calculateLambert(Vector intersection) {
+float calculateLambert(Vector sphereCenter, Vector intersection) {
   Vector lightPosition(0.5f, 0.5f, 0.0f);
   Vector lightDirection = (lightPosition - intersection).normalized();
   Vector sphereNormal = (intersection - sphereCenter).normalized();
@@ -80,6 +83,7 @@ float calculateLambert(Vector intersection) {
 }
 
 void renderImage(uint8_t* pixels) {
+  spheres.push_back(Vector(0.0f, 0.0f, -1.0f));
   uint8_t* p = pixels;
   for(int i = 0; i < 32; ++i) {
     for(int j = 0; j < 32; ++j) {
@@ -89,10 +93,11 @@ void renderImage(uint8_t* pixels) {
           0.0f);
       Vector rayDirection(0.0f, 0.0f, -1.0f);
       std::pair<bool, Vector> sphereIntersection = calculateSphereIntersection(
+          spheres.front(),
           rayOrigin,
           rayDirection);
       if(sphereIntersection.first) {
-        uint8_t red = calculateLambert(sphereIntersection.second) * 0xFF;
+        uint8_t red = calculateLambert(spheres.front(), sphereIntersection.second) * 0xFF;
         *p = 0x0 & 0xFF; p++;
         *p = 0x0 & 0xFF; p++;
         *p = red & 0xFF; p++;
