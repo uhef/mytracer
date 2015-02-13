@@ -46,6 +46,23 @@ class Vector {
     }
 };
 
+class Color {
+  private:
+    bool defined;
+  public:
+    uint8_t red;
+    uint8_t green;
+    uint8_t blue;
+    Color() : defined(false), red(0x0), green(0x0), blue(0x0) {}
+    bool isDefined() const { return defined; }
+    void setColor(uint8_t r, uint8_t g, uint8_t b) {
+      defined = true;
+      red = r;
+      green = g;
+      blue = b;
+    }
+};
+
 std::list<Vector> spheres;
 
 float pixelCoordinateToWorldCoordinate(int coordinate) {
@@ -83,24 +100,34 @@ float calculateLambert(Vector sphereCenter, Vector intersection) {
 }
 
 void renderImage(uint8_t* pixels) {
-  spheres.push_back(Vector(0.0f, 0.25f, -1.0f));
+  spheres.push_back(Vector(0.0f, 0.3f, -1.0f));
+  spheres.push_back(Vector(0.0f, -0.3f, -1.0f));
   uint8_t* p = pixels;
   for(int i = 0; i < 32; ++i) {
     for(int j = 0; j < 32; ++j) {
+      Color pixelColor;
       Vector rayOrigin(
           pixelCoordinateToWorldCoordinate(j),
           pixelCoordinateToWorldCoordinate(i),
           0.0f);
       Vector rayDirection(0.0f, 0.0f, -1.0f);
-      std::pair<bool, Vector> sphereIntersection = calculateSphereIntersection(
-          spheres.front(),
-          rayOrigin,
-          rayDirection);
-      if(sphereIntersection.first) {
-        uint8_t red = calculateLambert(spheres.front(), sphereIntersection.second) * 0xFF;
-        *p = 0x0 & 0xFF; p++;
-        *p = 0x0 & 0xFF; p++;
-        *p = red & 0xFF; p++;
+      std::list<Vector>::iterator sphereIt = spheres.begin();
+      while(sphereIt != spheres.end()) {
+        Vector sphereCenter = *sphereIt;
+        std::pair<bool, Vector> sphereIntersection = calculateSphereIntersection(
+            sphereCenter,
+            rayOrigin,
+            rayDirection);
+        if(sphereIntersection.first) {
+          uint8_t red = calculateLambert(sphereCenter, sphereIntersection.second) * 0xFF;
+          pixelColor.setColor(red, 0x0, 0x0);
+        }
+        sphereIt++;
+      }
+      if(pixelColor.isDefined()) {
+        *p = pixelColor.blue & 0xFF; p++;
+        *p = pixelColor.green & 0xFF; p++;
+        *p = pixelColor.red & 0xFF; p++;
       } else {
         p += 3;
       }
