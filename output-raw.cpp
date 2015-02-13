@@ -83,7 +83,7 @@ float calculateLambert(Vector sphereCenter, Vector intersection) {
 }
 
 void renderImage(uint8_t* pixels) {
-  spheres.push_back(Vector(0.0f, 0.0f, -1.0f));
+  spheres.push_back(Vector(0.0f, 0.25f, -1.0f));
   uint8_t* p = pixels;
   for(int i = 0; i < 32; ++i) {
     for(int j = 0; j < 32; ++j) {
