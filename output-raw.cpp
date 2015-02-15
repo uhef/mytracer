@@ -54,6 +54,12 @@ class Color {
     uint8_t green;
     uint8_t blue;
     Color() : defined(false), red(0x0), green(0x0), blue(0x0) {}
+    Color(float r, float g, float b) {
+      defined = true;
+      red = 0x0;
+      green = 0xFF;
+      blue = 0x0;
+    }
     bool isDefined() const { return defined; }
     void setColor(uint8_t r, uint8_t g, uint8_t b) {
       defined = true;
@@ -63,7 +69,7 @@ class Color {
     }
 };
 
-std::list<Vector> spheres;
+std::list<std::pair<Vector, Color>> spheres;
 
 float pixelCoordinateToWorldCoordinate(int coordinate) {
   return ((coordinate / 32.0f) - 0.5f) * 2.0f;
@@ -100,8 +106,8 @@ float calculateLambert(Vector sphereCenter, Vector intersection) {
 }
 
 void renderImage(uint8_t* pixels) {
-  spheres.push_back(Vector(0.0f, 0.3f, -1.0f));
-  spheres.push_back(Vector(0.0f, -0.3f, -1.0f));
+  spheres.push_back(std::make_pair(Vector(0.0f, 0.3f, -1.0f), Color(1.0f, 0.0f, 0.0f)));
+  spheres.push_back(std::make_pair(Vector(0.0f, -0.3f, -1.0f), Color(1.0f, 0.0f, 0.0f)));
   uint8_t* p = pixels;
   for(int i = 0; i < 32; ++i) {
     for(int j = 0; j < 32; ++j) {
@@ -111,15 +117,15 @@ void renderImage(uint8_t* pixels) {
           pixelCoordinateToWorldCoordinate(i),
           0.0f);
       Vector rayDirection(0.0f, 0.0f, -1.0f);
-      std::list<Vector>::iterator sphereIt = spheres.begin();
+      std::list<std::pair<Vector, Color>>::iterator sphereIt = spheres.begin();
       while(sphereIt != spheres.end()) {
-        Vector sphereCenter = *sphereIt;
+        std::pair<Vector, Color> sphere = *sphereIt;
         std::pair<bool, Vector> sphereIntersection = calculateSphereIntersection(
-            sphereCenter,
+            sphere.first,
             rayOrigin,
             rayDirection);
         if(sphereIntersection.first) {
-          uint8_t red = calculateLambert(sphereCenter, sphereIntersection.second) * 0xFF;
+          uint8_t red = calculateLambert(sphere.first, sphereIntersection.second) * 0xFF;
           pixelColor.setColor(red, 0x0, 0x0);
         }
         sphereIt++;
