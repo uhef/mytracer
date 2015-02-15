@@ -49,10 +49,10 @@ class Vector {
 class Color {
   private:
     bool defined;
-  public:
     uint8_t red;
     uint8_t green;
     uint8_t blue;
+  public:
     Color() : defined(false), red(0x0), green(0x0), blue(0x0) {}
     Color(float r, float g, float b) {
       defined = true;
@@ -67,6 +67,9 @@ class Color {
       green = g;
       blue = b;
     }
+    uint8_t redByte() const { return red; }
+    uint8_t greenByte() const { return green; }
+    uint8_t blueByte() const { return blue; }
 };
 
 std::list<std::pair<Vector, Color>> spheres;
@@ -131,9 +134,9 @@ void renderImage(uint8_t* pixels) {
         sphereIt++;
       }
       if(pixelColor.isDefined()) {
-        *p = pixelColor.blue & 0xFF; p++;
-        *p = pixelColor.green & 0xFF; p++;
-        *p = pixelColor.red & 0xFF; p++;
+        *p = pixelColor.blueByte() & 0xFF; p++;
+        *p = pixelColor.greenByte() & 0xFF; p++;
+        *p = pixelColor.redByte() & 0xFF; p++;
       } else {
         p += 3;
       }
