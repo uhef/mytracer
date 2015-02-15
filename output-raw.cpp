@@ -66,6 +66,12 @@ class Color {
           green * scale,
           blue * scale);
     }
+    Color operator + (const Color& color) const {
+      return Color(
+          red + color.red,
+          green + color.green,
+          blue + color.blue);
+    }
     bool isDefined() const { return defined; }
     uint8_t redByte() const { return red * 0xFF; }
     uint8_t greenByte() const { return green * 0xFF; }
@@ -98,7 +104,11 @@ std::pair<bool, Vector> calculateSphereIntersection(
   float t = 0.0;
   if (lSquared > sphereRadiusSquared) t = s - q;
   else t = s + q;
-  return std::make_pair(true, spherePoint(rayOrigin, rayDirection, t));
+  if (t > 0.00001f) {
+    return std::make_pair(true, spherePoint(rayOrigin, rayDirection, t));
+  } else {
+    return std::make_pair(false, Vector());
+  }
 }
 
 float calculateLambert(Vector sphereCenter, Vector intersection) {
@@ -106,6 +116,17 @@ float calculateLambert(Vector sphereCenter, Vector intersection) {
   Vector lightDirection = (lightPosition - intersection).normalized();
   Vector sphereNormal = (intersection - sphereCenter).normalized();
   return std::max(0.0f, lightDirection.dot(sphereNormal));
+}
+
+bool isShadowed(Vector point, std::list<std::pair<Vector, Color>> spheres) {
+  Vector lightPosition(0.5f, 0.5f, 0.0f);
+  Vector lightDirection = (lightPosition - point).normalized();
+  for(std::pair<Vector, Color> sphere : spheres) {
+    if(calculateSphereIntersection(sphere.first, point, lightDirection).first) {
+      return true;
+    }
+  }
+  return false;
 }
 
 void renderImage(uint8_t* pixels) {
@@ -128,8 +149,12 @@ void renderImage(uint8_t* pixels) {
             rayOrigin,
             rayDirection);
         if(sphereIntersection.first) {
-          pixelColor = sphere.second *
-            calculateLambert(sphere.first, sphereIntersection.second);
+          if(isShadowed(sphereIntersection.second, spheres)) {
+            pixelColor = pixelColor + Color(0.0f, 0.0f, 0.0f);
+          } else {
+            pixelColor = sphere.second *
+              calculateLambert(sphere.first, sphereIntersection.second);
+          }
         }
         sphereIt++;
       }
