@@ -49,27 +49,27 @@ class Vector {
 class Color {
   private:
     bool defined;
-    uint8_t red;
-    uint8_t green;
-    uint8_t blue;
+    float red;
+    float green;
+    float blue;
   public:
-    Color() : defined(false), red(0x0), green(0x0), blue(0x0) {}
+    Color() : defined(false), red(0.0f), green(0.0f), blue(0.0f) {}
     Color(float r, float g, float b) {
-      defined = true;
-      red = 0x0;
-      green = 0xFF;
-      blue = 0x0;
-    }
-    bool isDefined() const { return defined; }
-    void setColor(uint8_t r, uint8_t g, uint8_t b) {
       defined = true;
       red = r;
       green = g;
       blue = b;
     }
-    uint8_t redByte() const { return red; }
-    uint8_t greenByte() const { return green; }
-    uint8_t blueByte() const { return blue; }
+    Color operator * (float scale) const {
+      return Color(
+          red * scale,
+          green * scale,
+          blue * scale);
+    }
+    bool isDefined() const { return defined; }
+    uint8_t redByte() const { return red * 0xFF; }
+    uint8_t greenByte() const { return green * 0xFF; }
+    uint8_t blueByte() const { return blue * 0xFF; }
 };
 
 std::list<std::pair<Vector, Color>> spheres;
@@ -128,8 +128,8 @@ void renderImage(uint8_t* pixels) {
             rayOrigin,
             rayDirection);
         if(sphereIntersection.first) {
-          uint8_t red = calculateLambert(sphere.first, sphereIntersection.second) * 0xFF;
-          pixelColor.setColor(red, 0x0, 0x0);
+          pixelColor = sphere.second *
+            calculateLambert(sphere.first, sphereIntersection.second);
         }
         sphereIt++;
       }
