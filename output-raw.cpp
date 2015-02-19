@@ -79,9 +79,10 @@ class Color {
 };
 
 std::list<std::pair<Vector, Color>> spheres;
+int resolution = 128;
 
 float pixelCoordinateToWorldCoordinate(int coordinate) {
-  return ((coordinate / 32.0f) - 0.5f) * 2.0f;
+  return ((coordinate / (float)resolution) - 0.5f) * 2.0f;
 }
 
 Vector spherePoint(Vector rayOrigin, Vector rayDirection, float t) {
@@ -133,8 +134,8 @@ void renderImage(uint8_t* pixels) {
   spheres.push_back(std::make_pair(Vector(0.0f, 0.3f, -1.0f), Color(1.0f, 0.0f, 0.0f)));
   spheres.push_back(std::make_pair(Vector(0.0f, -0.3f, -1.0f), Color(0.96f, 0.94f, 0.32f)));
   uint8_t* p = pixels;
-  for(int i = 0; i < 32; ++i) {
-    for(int j = 0; j < 32; ++j) {
+  for(int i = 0; i < resolution; ++i) {
+    for(int j = 0; j < resolution; ++j) {
       Color pixelColor;
       Vector rayOrigin(
           pixelCoordinateToWorldCoordinate(j),
@@ -172,32 +173,32 @@ void renderImage(uint8_t* pixels) {
 int main() {
   FILE* outputFile = fopen("output.tga", "wb");
 
-  uint8_t* pixels = (uint8_t*)malloc(32 * 32 * 3);
+  uint8_t* pixels = (uint8_t*)malloc(resolution * resolution * 3);
   uint8_t* p = pixels;
   uint8_t blue = 0;
-  for(int i = 0; i < 32; ++i) {
+  for(int i = 0; i < resolution; ++i) {
     uint8_t green = 0;
-    for(int j = 0; j < 32; ++j) {
+    for(int j = 0; j < resolution; ++j) {
       *p = blue & 0xFF; p++;
       *p = green & 0xFF; p++;
       *p = 0x0; p++;
-      green += 7;
+      green += (uint8_t)(255.0f / (float)resolution);
     }
-    blue += 7;
+    blue += (uint8_t)(255.0f / (float)resolution);
   }
 
   uint8_t tgaHeader[18] = {0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 
-  tgaHeader[12] = 32 & 0xFF;
-  tgaHeader[13] = (32 >> 8) & 0xFF;
-  tgaHeader[14] = (32) & 0xFF; 
-  tgaHeader[15] = (32 >> 8) & 0xFF;
+  tgaHeader[12] = resolution & 0xFF;
+  tgaHeader[13] = (resolution >> 8) & 0xFF;
+  tgaHeader[14] = (resolution) & 0xFF;
+  tgaHeader[15] = (resolution >> 8) & 0xFF;
   tgaHeader[16] = 24; 
   
   renderImage(pixels);
 
   fwrite(tgaHeader, sizeof(uint8_t), 18, outputFile);
-  fwrite(pixels, sizeof(uint8_t), 32 * 32 * 3, outputFile);
+  fwrite(pixels, sizeof(uint8_t), resolution * resolution * 3, outputFile);
   fclose(outputFile);
 
   free(pixels);
