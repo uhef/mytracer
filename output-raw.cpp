@@ -1,5 +1,6 @@
 #include <iostream>
 #include <list>
+#include <queue>
 #include <cmath>
 #include <stdint.h>
 
@@ -79,8 +80,8 @@ class Color {
 };
 
 typedef std::pair<Vector, Color> Sphere;
-
 std::list<Sphere> spheres;
+typedef std::pair<Sphere, Vector> IntersectionPoint;
 int resolution = 128;
 
 float pixelCoordinateToWorldCoordinate(int coordinate) {
@@ -91,27 +92,37 @@ Vector spherePoint(Vector rayOrigin, Vector rayDirection, float t) {
   return rayOrigin + (rayDirection * t);
 }
 
-std::pair<bool, Vector> calculateSphereIntersection(
-    Vector sphereCenter,
+std::pair<bool, IntersectionPoint> calculateSphereIntersection(
+    std::list<Sphere> spheres,
     Vector rayOrigin,
     Vector rayDirection) {
-  float sphereRadius = 0.5f;
-  Vector l = sphereCenter - rayOrigin;
-  float s = l.dot(rayDirection);
-  float lSquared = l.dot(l);
-  float sphereRadiusSquared = sphereRadius * sphereRadius;
-  if (s < 0 && lSquared > sphereRadiusSquared) return std::make_pair(false, Vector());
-  float mSquared = lSquared - (s * s);
-  if (mSquared > sphereRadiusSquared) return std::make_pair(false, Vector());
-  float q = sqrt(sphereRadiusSquared - mSquared);
-  float t = 0.0;
-  if (lSquared > sphereRadiusSquared) t = s - q;
-  else t = s + q;
-  if (t > 0.00001f) {
-    return std::make_pair(true, spherePoint(rayOrigin, rayDirection, t));
-  } else {
-    return std::make_pair(false, Vector());
+  bool intersectionFound = false;
+  float tMin = 0.0;
+  std::pair<bool, IntersectionPoint> ret = std::make_pair(
+      false, std::make_pair(std::make_pair(Vector(), Color()), Vector()));
+  for(Sphere sphere : spheres) {
+    Vector sphereCenter = sphere.first;
+    float sphereRadius = 0.5f;
+    Vector l = sphereCenter - rayOrigin;
+    float s = l.dot(rayDirection);
+    float lSquared = l.dot(l);
+    float sphereRadiusSquared = sphereRadius * sphereRadius;
+    if (s < 0 && lSquared > sphereRadiusSquared) continue;
+    float mSquared = lSquared - (s * s);
+    if (mSquared > sphereRadiusSquared) continue;
+    float q = sqrt(sphereRadiusSquared - mSquared);
+    float t = 0.0;
+    if (lSquared > sphereRadiusSquared) t = s - q;
+    else t = s + q;
+    if (t > 0.00001f && (!intersectionFound || t < tMin)) {
+      intersectionFound = true;
+      tMin = t;
+      ret = std::make_pair(
+          true,
+          std::make_pair(sphere, spherePoint(rayOrigin, rayDirection, t)));
+    }
   }
+  return ret;
 }
 
 float calculateLambert(Vector sphereCenter, Vector intersection) {
@@ -124,12 +135,7 @@ float calculateLambert(Vector sphereCenter, Vector intersection) {
 bool isShadowed(Vector point, std::list<Sphere> spheres) {
   Vector lightPosition(0.5f, 0.5f, 0.0f);
   Vector lightDirection = (lightPosition - point).normalized();
-  for(Sphere sphere : spheres) {
-    if(calculateSphereIntersection(sphere.first, point, lightDirection).first) {
-      return true;
-    }
-  }
-  return false;
+  return calculateSphereIntersection(spheres, point, lightDirection).first;
 }
 
 void renderImage(uint8_t* pixels) {
@@ -144,22 +150,18 @@ void renderImage(uint8_t* pixels) {
           pixelCoordinateToWorldCoordinate(i),
           0.0f);
       Vector rayDirection(0.0f, 0.0f, -1.0f);
-      std::list<Sphere>::iterator sphereIt = spheres.begin();
-      while(sphereIt != spheres.end()) {
-        Sphere sphere = *sphereIt;
-        std::pair<bool, Vector> sphereIntersection = calculateSphereIntersection(
-            sphere.first,
-            rayOrigin,
-            rayDirection);
-        if(sphereIntersection.first) {
-          if(isShadowed(sphereIntersection.second, spheres)) {
-            pixelColor = pixelColor + Color(0.0f, 0.0f, 0.0f);
-          } else {
-            pixelColor = sphere.second *
-              calculateLambert(sphere.first, sphereIntersection.second);
-          }
+      std::pair<bool, IntersectionPoint> sphereIntersection = calculateSphereIntersection(
+          spheres,
+          rayOrigin,
+          rayDirection);
+      if(sphereIntersection.first) {
+        if(isShadowed(sphereIntersection.second.second, spheres)) {
+          pixelColor = pixelColor + Color(0.0f, 0.0f, 0.0f);
+        } else {
+          pixelColor = sphereIntersection.second.first.second *
+            calculateLambert(sphereIntersection.second.first.first,
+                sphereIntersection.second.second);
         }
-        sphereIt++;
       }
       if(pixelColor.isDefined()) {
         *p = pixelColor.blueByte() & 0xFF; p++;
