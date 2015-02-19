@@ -78,7 +78,9 @@ class Color {
     uint8_t blueByte() const { return blue * 0xFF; }
 };
 
-std::list<std::pair<Vector, Color>> spheres;
+typedef std::pair<Vector, Color> Sphere;
+
+std::list<Sphere> spheres;
 int resolution = 128;
 
 float pixelCoordinateToWorldCoordinate(int coordinate) {
@@ -119,10 +121,10 @@ float calculateLambert(Vector sphereCenter, Vector intersection) {
   return std::max(0.0f, lightDirection.dot(sphereNormal));
 }
 
-bool isShadowed(Vector point, std::list<std::pair<Vector, Color>> spheres) {
+bool isShadowed(Vector point, std::list<Sphere> spheres) {
   Vector lightPosition(0.5f, 0.5f, 0.0f);
   Vector lightDirection = (lightPosition - point).normalized();
-  for(std::pair<Vector, Color> sphere : spheres) {
+  for(Sphere sphere : spheres) {
     if(calculateSphereIntersection(sphere.first, point, lightDirection).first) {
       return true;
     }
@@ -142,9 +144,9 @@ void renderImage(uint8_t* pixels) {
           pixelCoordinateToWorldCoordinate(i),
           0.0f);
       Vector rayDirection(0.0f, 0.0f, -1.0f);
-      std::list<std::pair<Vector, Color>>::iterator sphereIt = spheres.begin();
+      std::list<Sphere>::iterator sphereIt = spheres.begin();
       while(sphereIt != spheres.end()) {
-        std::pair<Vector, Color> sphere = *sphereIt;
+        Sphere sphere = *sphereIt;
         std::pair<bool, Vector> sphereIntersection = calculateSphereIntersection(
             sphere.first,
             rayOrigin,
