@@ -57,9 +57,9 @@ class Color {
     Color() : defined(false), red(0.0f), green(0.0f), blue(0.0f) {}
     Color(float r, float g, float b) {
       defined = true;
-      red = r;
-      green = g;
-      blue = b;
+      red = std::min(r, 1.0f);
+      green = std::min(g, 1.0f);
+      blue = std::min(b, 1.0f);
     }
     Color operator * (float scale) const {
       return Color(
