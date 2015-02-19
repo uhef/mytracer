@@ -139,29 +139,42 @@ bool isShadowed(Vector point, std::list<Sphere> spheres) {
 }
 
 void renderImage(uint8_t* pixels) {
-  spheres.push_back(std::make_pair(Vector(0.0f, 0.3f, -1.0f), Color(1.0f, 0.0f, 0.0f)));
-  spheres.push_back(std::make_pair(Vector(0.0f, -0.3f, -1.0f), Color(0.96f, 0.94f, 0.32f)));
+  spheres.push_back(std::make_pair(Vector(0.0f, 0.45f, -1.0f), Color(1.0f, 0.0f, 0.0f)));
+  spheres.push_back(std::make_pair(Vector(0.0f, -0.45f, -1.0f), Color(0.96f, 0.94f, 0.32f)));
   uint8_t* p = pixels;
   for(int i = 0; i < resolution; ++i) {
     for(int j = 0; j < resolution; ++j) {
+      int currentDepth = 0;
       Color pixelColor;
+      float reflectionFactor = 1.0f;
       Vector rayOrigin(
           pixelCoordinateToWorldCoordinate(j),
           pixelCoordinateToWorldCoordinate(i),
           0.0f);
       Vector rayDirection(0.0f, 0.0f, -1.0f);
-      std::pair<bool, IntersectionPoint> sphereIntersection = calculateSphereIntersection(
-          spheres,
-          rayOrigin,
-          rayDirection);
-      if(sphereIntersection.first) {
-        IntersectionPoint intersectionPoint = sphereIntersection.second;
-        Sphere intersectionSphere = intersectionPoint.first;
-        if(isShadowed(intersectionPoint.second, spheres)) {
-          pixelColor = pixelColor + Color(0.0f, 0.0f, 0.0f);
+      while(currentDepth < 10) {
+        std::pair<bool, IntersectionPoint> sphereIntersection = calculateSphereIntersection(
+            spheres,
+            rayOrigin,
+            rayDirection);
+        if(sphereIntersection.first) {
+          IntersectionPoint intersectionPoint = sphereIntersection.second;
+          Sphere intersectionSphere = intersectionPoint.first;
+          if(isShadowed(intersectionPoint.second, spheres)) {
+            pixelColor = pixelColor + Color(0.0f, 0.0f, 0.0f);
+          } else {
+            pixelColor = pixelColor + (intersectionSphere.second *
+              calculateLambert(intersectionSphere.first, intersectionPoint.second)
+              * reflectionFactor);
+          }
+          reflectionFactor = reflectionFactor * 0.6f;
+          Vector sphereNormal = (intersectionPoint.second - intersectionSphere.first).normalized();
+          float reflect = 2.0f * (rayDirection.dot(sphereNormal));
+          rayOrigin = intersectionPoint.second;
+          rayDirection = rayDirection - (sphereNormal * reflect);
+          currentDepth++;
         } else {
-          pixelColor = intersectionSphere.second *
-            calculateLambert(intersectionSphere.first, intersectionPoint.second);
+          currentDepth = 10;
         }
       }
       if(pixelColor.isDefined()) {
