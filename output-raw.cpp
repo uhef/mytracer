@@ -155,12 +155,13 @@ void renderImage(uint8_t* pixels) {
           rayOrigin,
           rayDirection);
       if(sphereIntersection.first) {
-        if(isShadowed(sphereIntersection.second.second, spheres)) {
+        IntersectionPoint intersectionPoint = sphereIntersection.second;
+        Sphere intersectionSphere = intersectionPoint.first;
+        if(isShadowed(intersectionPoint.second, spheres)) {
           pixelColor = pixelColor + Color(0.0f, 0.0f, 0.0f);
         } else {
-          pixelColor = sphereIntersection.second.first.second *
-            calculateLambert(sphereIntersection.second.first.first,
-                sphereIntersection.second.second);
+          pixelColor = intersectionSphere.second *
+            calculateLambert(intersectionSphere.first, intersectionPoint.second);
         }
       }
       if(pixelColor.isDefined()) {
