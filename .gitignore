@@ -1,3 +1,6 @@
 output-raw
 *.swp
 output.tga
+outputs
+_site
+.sass-cache
