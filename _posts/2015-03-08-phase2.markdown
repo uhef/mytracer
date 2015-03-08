@@ -1,0 +1,41 @@
+---
+layout: post
+title:  "Phase 2 - First Rays"
+date:   2015-03-08 20:54:46
+categories:
+---
+I decided to follow this [tutorial][tutorial] on the first steps of implementing the  ray tracer.
+
+First thing to do was to render one simple object on the image by casting rays.
+
+For this a simplest possible object was added to the scene - a sphere. The sphere is located at (0, 0, 1).
+
+At this stage the output image can be thought of as a plane in the scene. The plane spans from -0.5 to 0.5 on x-axis and y-axis and lies at z = 0. For each pixel of the image we shoot one ray to the scene through this plane. If ray intersects with sphere the originating pixel is rendered red. If ray does not intersect with sphere the pixel color is left to what it was at the end of [phase 1][phase1].
+
+The beef is the function that calculates intersections between rays and spheres:
+
+{% highlight c++ linenos %}
+{% raw %}
+bool rayIntersectsSphere(Vector rayOrigin, Vector rayDirection) {
+  Vector sphereCenter(0.0f, 0.0f, 1.0f);
+  float sphereRadius = 0.5f;
+  float b = rayDirection.dot(rayOrigin - sphereCenter);
+  float c = ((rayOrigin - sphereCenter).dot(rayOrigin - sphereCenter)) - (sphereRadius * sphereRadius);
+  return ((b * b) - c) >= 0;
+}
+{% endraw %}
+{% endhighlight %}
+
+Ray-sphere intersection is about solving a quadratic equation (ray can intersect the sphere at one point, at two points or not at all). The `((b * b) - c) >= 0` bit at the end is checking on the discriminant of the quadratic equation. If there are solutions to the quadratic equation (ray intersects sphere) the discriminant is greater or equal to zero.
+
+Notice that at this point its enough to detect if the ray hits the sphere or not. Thus its enough just to return a boolean and color the pixel according to return value.
+
+In the output we can clearly see that some rays are hitting the sphere while some are not:
+
+![phase2]({{ site.baseurl }}/images/phase2.png)
+
+See the phase 2 source code in [github][phase2]
+
+[tutorial]:    http://www.ics.uci.edu/~gopi/CS211B/RayTracing%20tutorial.pdf
+[phase1]:      {{ site.baseurl }}/phase1/
+[phase2]:      https://github.com/uhef/mytracer/tree/phase-2

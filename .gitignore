@@ -1,3 +1,13 @@
+_site
+.DS_Store
+.jekyll
+.bundle
+.sass-cache
+Gemfile
+Gemfile.lock
+node_modules
+package.json
 output-raw
-*.swp
 output.tga
+outputs
+*.swp
