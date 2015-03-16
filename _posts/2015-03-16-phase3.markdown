@@ -1,0 +1,55 @@
+---
+layout: post
+title:  "Phase 3 - Let there be light!"
+date:   2015-03-16 08:39:24
+categories:
+---
+In order to make the red blob in the [previous phase][phase2] look like a sphere a rudimentary lighting model is in order.
+
+To keep it simple I decided to go with [Lambertian reflectance][lambertian]. In lambertian reflectance the reflection depends on the angle of the surface normal vector at the incident point and light direction from the incident point towards the light.
+
+This code snippet in [phase 3][phase3] calculates the Lambertian coefficient:
+{% highlight c++ linenos %}
+{% raw %}
+float calculateLambert(Vector intersection) {
+  Vector lightPosition(0.5f, 0.5f, 0.0f);
+  Vector lightDirection = (lightPosition - intersection).normalized();
+  Vector sphereNormal = (intersection - sphereCenter).normalized();
+  return std::max(0.0f, lightDirection.dot(sphereNormal));
+}
+{% endraw %}
+{% endhighlight %}
+
+As you can see the coefficient is calculated as a dot product between surface normal and light direction at the point where ray from rendering plane intersects with the object.
+
+In order to gain the ray-sphere intersection point the `rayIntersectsSphere` function from [phase 2][phase2] is beefed out as well:
+{% highlight c++ linenos %}
+{% raw %}
+std::list<Vector> calculateSphereIntersections(Vector rayOrigin, Vector rayDirection) {
+  std::list<Vector> ret;
+  float sphereRadius = 0.5f;
+  float b = rayDirection.dot(rayOrigin - sphereCenter);
+  float c = ((rayOrigin - sphereCenter).dot(rayOrigin - sphereCenter)) - (sphereRadius * sphereRadius);
+  float discriminant = ((b * b) - c);
+  if (discriminant >= 0) {
+    float t0 = -b - (sqrt(discriminant));
+    float t1 = -b + (sqrt(discriminant));
+    ret.push_back(spherePoint(rayOrigin, rayDirection, std::min(t0, t1)));
+    ret.push_back(spherePoint(rayOrigin, rayDirection, std::max(t0, t1)));
+  }
+  return ret;
+}
+{% endraw %}
+{% endhighlight %}
+The function now returns a list of ray-sphere intersection points ordering them so that the closest intersection point to rendering plane is first in the list. In practice the farther intersection point is not of concern at the moment and could be removed. Function is also renamed since its not returning a boolean anymore.
+
+Finally the sphere color (red) is scaled by the calculated lambertian coefficient in order to create rendering where the sphere reflects red color where the light falls while leaving the opposite side to shadow:
+
+![phase3]({{ site.baseurl }}/images/phase3.png)
+
+See the phase 3 source code in [github][phase3]
+
+[lambertian]:  http://en.wikipedia.org/wiki/Lambertian_reflectance
+[phase2]:      {{ site.baseurl }}/phase2/
+[phase3]:      https://github.com/uhef/mytracer/tree/phase-3
+
