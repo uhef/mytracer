@@ -9,6 +9,7 @@ class Vector {
     float y;
     float z;
   public:
+    Vector() : x(0), y(0), z(0) {}
     Vector(float x, float y, float z) : x(x), y(y), z(z) {}
     Vector(const Vector & v) : x(v.x), y(v.y), z(v.z) {}
     float length() const {
@@ -55,19 +56,20 @@ Vector spherePoint(Vector rayOrigin, Vector rayDirection, float t) {
   return rayOrigin + (rayDirection * t);
 }
 
-std::list<Vector> calculateSphereIntersections(Vector rayOrigin, Vector rayDirection) {
-  std::list<Vector> ret;
+std::pair<bool, Vector> calculateSphereIntersection(Vector rayOrigin, Vector rayDirection) {
   float sphereRadius = 0.5f;
-  float b = rayDirection.dot(rayOrigin - sphereCenter);
-  float c = ((rayOrigin - sphereCenter).dot(rayOrigin - sphereCenter)) - (sphereRadius * sphereRadius);
-  float discriminant = ((b * b) - c);
-  if (discriminant >= 0) {
-    float t0 = -b - (sqrt(discriminant));
-    float t1 = -b + (sqrt(discriminant));
-    ret.push_back(spherePoint(rayOrigin, rayDirection, std::min(t0, t1)));
-    ret.push_back(spherePoint(rayOrigin, rayDirection, std::max(t0, t1)));
-  }
-  return ret;
+  Vector l = sphereCenter - rayOrigin;
+  float s = l.dot(rayDirection);
+  float lSquared = l.dot(l);
+  float sphereRadiusSquared = sphereRadius * sphereRadius;
+  if (s < 0 && lSquared > sphereRadiusSquared) return std::make_pair(false, Vector());
+  float mSquared = lSquared - (s * s);
+  if (mSquared > sphereRadiusSquared) return std::make_pair(false, Vector());
+  float q = sqrt(sphereRadiusSquared - mSquared);
+  float t = 0.0;
+  if (lSquared > sphereRadiusSquared) t = s - q;
+  else t = s + q;
+  return std::make_pair(true, spherePoint(rayOrigin, rayDirection, t));
 }
 
 float calculateLambert(Vector intersection) {
@@ -86,11 +88,11 @@ void renderImage(uint8_t* pixels) {
           pixelCoordinateToWorldCoordinate(i),
           0.0f);
       Vector rayDirection(0.0f, 0.0f, -1.0f);
-      std::list<Vector> sphereIntersections = calculateSphereIntersections(
+      std::pair<bool, Vector> sphereIntersection = calculateSphereIntersection(
           rayOrigin,
           rayDirection);
-      if(!sphereIntersections.empty()) {
-        uint8_t red = calculateLambert(sphereIntersections.front()) * 0xFF;
+      if(sphereIntersection.first) {
+        uint8_t red = calculateLambert(sphereIntersection.second) * 0xFF;
         *p = 0x0 & 0xFF; p++;
         *p = 0x0 & 0xFF; p++;
         *p = red & 0xFF; p++;
