@@ -1,0 +1,44 @@
+---
+layout: post
+title:  "Phase 4 - Optimize ray-sphere intersection"
+date:   2015-03-23 16:23:58
+categories:
+---
+As mentioned in [previous phase][phase3] the ray-sphere intersection function (`calculateSphereIntersections`) returned a list of intersection points even though it is enough to be aware of the closest intersection point only. Also, as pointed out by [Boojum][boojum] in the related [reddit thread][reddit] dynamic memory allocation in ray tracer inner loop hinders performance unnecessarily.
+
+In order to tackle this and more the ray-sphere intersection function was revisited:
+{% highlight c++ linenos %}
+{% raw %}
+std::pair<bool, Vector> calculateSphereIntersection(Vector rayOrigin, Vector rayDirection) {
+  float sphereRadius = 0.5f;
+  Vector l = sphereCenter - rayOrigin;
+  float s = l.dot(rayDirection);
+  float lSquared = l.dot(l);
+  float sphereRadiusSquared = sphereRadius * sphereRadius;
+  if (s < 0 && lSquared > sphereRadiusSquared) return std::make_pair(false, Vector());
+  float mSquared = lSquared - (s * s);
+  if (mSquared > sphereRadiusSquared) return std::make_pair(false, Vector());
+  float q = sqrt(sphereRadiusSquared - mSquared);
+  float t = 0.0;
+  if (lSquared > sphereRadiusSquared) t = s - q;
+  else t = s + q;
+  return std::make_pair(true, spherePoint(rayOrigin, rayDirection, t));
+}
+{% endraw %}
+{% endhighlight %}
+
+The new version requires some explanation: Firstly the dynamic memory allocation is gone due to usage of `std::pair` which is allocated in stack. Otherwise the ray-sphere intersection algorithm is improved by following the optimized ray-sphere intersection solution explained in the book [Real-Time Rendering][real-time-rendering] by Tomas Möller and Eric Haines.
+
+![ray-sphere-intersection]({{ site.baseurl }}/images/ray-sphere-intersection.jpg)
+
+As shown in the image, _l_ is the vector from ray origin to sphere center. _s_ is projection of _l_ on to ray direction vector. If `s < 0 && lSquared > sphereRadiusSquared` then sphere lies behind the ray origin and ray origin is not inside the sphere, thus there cannot be intersection and we can return. _m_ is the distance between sphere center and the projection _s_ and can be calculated using pythagorean theorem. If `mSquared > sphereRadiusSquared` then the distance between _s_ and sphere center is more than sphere radius and the ray does not intersect with the sphere. Finally, _q_ is the length of _s_ that lies within sphere and can be calculated using pythagorean from sphere radius and _m_. If `lSquared > sphereRadiusSquared` then ray origin is outside sphere and _t_ is `s - q`. Otherwise ray origin is within sphere and _t_ is `s + q`.
+
+See the phase 4 source code in [github][phase4]
+
+[boojum]:      http://www.reddit.com/user/Boojum
+[reddit]:      http://www.reddit.com/r/programming/comments/2zkac9/mytracer_project_to_create_a_ray_tracer_from/
+[real-time-rendering]: http://www.amazon.com/Real-Time-Rendering-Tomas-MOller/dp/1568814240?tag=realtimerenderin
+[phase3]:      {{ site.baseurl }}/phase3/
+[phase4]:      https://github.com/uhef/mytracer/tree/phase-4
+
+
