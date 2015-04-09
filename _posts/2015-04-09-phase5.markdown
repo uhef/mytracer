@@ -1,0 +1,138 @@
+---
+layout: post
+title:  "Phase 5 - More is more"
+date:   2015-04-09 21:47:22
+categories:
+---
+Until now there has only been one sphere in the scene at a time. In this phase second sphere is introduced. The solution scales to any amount of spheres though.
+
+Since there can be any amount of spheres in the scene the ray-sphere intersection has to be revisited. Now the ray can intersect with any of the spheres in the scene. The core of the ray-sphere intersection still exists unchanged (lines 12 - 22) but the algorithm iterates over all objects in the scene and returns the closest intersection to the viewing plane. `tMin` is the smallest distance from viewing plane to any sphere intersection point.
+
+The odd-looking comparison `t > 0.00001f` on line 23 relates to shadows. Since there are now multiple objects in the scene at once it can be that one object is between another object and light source thus casting a shadow on the object. This is clarified further below.
+
+{% highlight c++ linenos %}
+{% raw %}
+std::pair<bool, IntersectionPoint> calculateSphereIntersection(
+    std::list<Sphere> spheres,
+    Vector rayOrigin,
+    Vector rayDirection) {
+  bool intersectionFound = false;
+  float tMin = 0.0;
+  std::pair<bool, IntersectionPoint> ret = std::make_pair(
+      false, std::make_pair(std::make_pair(Vector(), Color()), Vector()));
+  for(Sphere sphere : spheres) {
+    Vector sphereCenter = sphere.first;
+    float sphereRadius = 0.5f;
+    Vector l = sphereCenter - rayOrigin;
+    float s = l.dot(rayDirection);
+    float lSquared = l.dot(l);
+    float sphereRadiusSquared = sphereRadius * sphereRadius;
+    if (s < 0 && lSquared > sphereRadiusSquared) continue;
+    float mSquared = lSquared - (s * s);
+    if (mSquared > sphereRadiusSquared) continue;
+    float q = sqrt(sphereRadiusSquared - mSquared);
+    float t = 0.0;
+    if (lSquared > sphereRadiusSquared) t = s - q;
+    else t = s + q;
+    if (t > 0.00001f && (!intersectionFound || t < tMin)) {
+      intersectionFound = true;
+      tMin = t;
+      ret = std::make_pair(
+          true,
+          std::make_pair(sphere, spherePoint(rayOrigin, rayDirection, t)));
+    }
+  }
+  return ret;
+}
+{% endraw %}
+{% endhighlight %}
+
+`renderImage` function was changed so that if ray-sphere intersection point is found (check for `sphereIntersection.first` on line 20) another check is performed to see if the particular point is shadowed by another sphere. This is done by the `isShadowed(intersectionPoint.second, spheres)` - check on line 23. Workings of `isShadowed` is explained later. If the point is shadowed by another sphere then no color is added to the pixel (`pixelColor + Color(0.0f, 0.0f, 0.0f)`). If the intersection point is not in shadow a color from the light source is added to the current pixel color.
+
+The current pixel color (`pixelColor`) is initialized to `undefined` state and only if ray-sphere intersection exists some color is added to the pixel thus making it `defined`. Once the intersections concerning a particular pixel are calculated a resulted color is assigned to a pixel (lines 40 - 46). If at this point the pixel color is still `undefined` the pixel is left like it was before calling `renderImage` thus using the background color at the pixel.
+
+Notice that being able to add colors to current pixel color is redundant at the moment but will prove useful when we have more than one light sources since at that time the resulting color is a mixture of colors resulting from light cast from all reachable light sources.
+
+{% highlight c++ linenos %}
+{% raw %}
+void renderImage(uint8_t* pixels) {
+  spheres.push_back(std::make_pair(Vector(0.0f, 0.45f, -1.0f), Color(1.0f, 0.0f, 0.0f)));
+  spheres.push_back(std::make_pair(Vector(0.0f, -0.45f, -1.0f), Color(0.96f, 0.94f, 0.32f)));
+  uint8_t* p = pixels;
+  for(int i = 0; i < resolution; ++i) {
+    for(int j = 0; j < resolution; ++j) {
+      int currentDepth = 0;
+      Color pixelColor;
+      float reflectionFactor = 1.0f;
+      Vector rayOrigin(
+          pixelCoordinateToWorldCoordinate(j),
+          pixelCoordinateToWorldCoordinate(i),
+          0.0f);
+      Vector rayDirection(0.0f, 0.0f, -1.0f);
+      while(currentDepth < 10) {
+        std::pair<bool, IntersectionPoint> sphereIntersection = calculateSphereIntersection(
+            spheres,
+            rayOrigin,
+            rayDirection);
+        if(sphereIntersection.first) {
+          IntersectionPoint intersectionPoint = sphereIntersection.second;
+          Sphere intersectionSphere = intersectionPoint.first;
+          if(isShadowed(intersectionPoint.second, spheres)) {
+            pixelColor = pixelColor + Color(0.0f, 0.0f, 0.0f);
+          } else {
+            pixelColor = pixelColor + (intersectionSphere.second *
+              calculateLambert(intersectionSphere.first, intersectionPoint.second)
+              * reflectionFactor);
+          }
+          reflectionFactor = reflectionFactor * 0.6f;
+          Vector sphereNormal = (intersectionPoint.second - intersectionSphere.first).normalized();
+          float reflect = 2.0f * (rayDirection.dot(sphereNormal));
+          rayOrigin = intersectionPoint.second;
+          rayDirection = rayDirection - (sphereNormal * reflect);
+          currentDepth++;
+        } else {
+          currentDepth = 10;
+        }
+      }
+      if(pixelColor.isDefined()) {
+        *p = pixelColor.blueByte() & 0xFF; p++;
+        *p = pixelColor.greenByte() & 0xFF; p++;
+        *p = pixelColor.redByte() & 0xFF; p++;
+      } else {
+        p += 3;
+      }
+    }
+  }
+}
+{% endraw %}
+{% endhighlight %}
+
+To determine if intersection point is shadowed by another sphere another ray is cast from intersection point towards light source. Same ray-sphere intersection algorithm is used as when determining if ray from view plane intersects a sphere.
+
+Comparison `t > 0.00001f` mentioned when `calculateSphereIntersection` was discussed removes potential of sphere casting shadow on itself. Due to roundings the ray - sphere intersection point can end up slightly inside sphere in which case when casting ray from intersection point towards light source the ray will intersect with the sphere itself.
+
+{% highlight c++ linenos %}
+{% raw %}
+bool isShadowed(Vector point, std::list<Sphere> spheres) {
+  Vector lightPosition(0.5f, 0.5f, 0.0f);
+  Vector lightDirection = (lightPosition - point).normalized();
+  return calculateSphereIntersection(spheres, point, lightDirection).first;
+}
+{% endraw %}
+{% endhighlight %}
+
+Below is a rendering with two spheres. Resolution is also increased from [phase 4][phase4].
+
+![phase5-without-shadows]({{ site.baseurl }}/images/phase5-noshadow.png)
+
+Below is a rendering with same two spheres where the yellow one is offsetted slightly to bring out shadowing. Notice that currently rendering is performed using orthogonal projection. Thus the effect is slightly awkward. In reality the yellow sphere is slighlty further away from camera than the red sphere.
+
+![phase5-with-shadows]({{ site.baseurl }}/images/phase5-shadow.png)
+
+See the phase 5 source code in [github][phase5]
+
+[phase4]:      {{ site.baseurl }}/phase4/
+[phase5]:      https://github.com/uhef/mytracer/tree/phase-5
+
+
+
