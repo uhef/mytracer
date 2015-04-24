@@ -1,0 +1,88 @@
+---
+layout: post
+title:  "Phase 6 - Reflections"
+date:   2015-04-21 15:12:28
+categories:
+---
+
+This phase introduces reflections. 
+
+Majority of the modifications are in `renderImage` - function:
+{% highlight c++ linenos %}
+{% raw %}
+void renderImage(uint8_t* pixels) {
+  spheres.push_back(std::make_pair(Vector(0.0f, 0.45f, -1.0f), Color(1.0f, 0.0f, 0.0f)));
+  spheres.push_back(std::make_pair(Vector(0.0f, -0.45f, -1.0f), Color(0.96f, 0.94f, 0.32f)));
+  uint8_t* p = pixels;
+  for(int i = 0; i < resolution; ++i) {
+    for(int j = 0; j < resolution; ++j) {
+      int currentDepth = 0;
+      Color pixelColor;
+      float reflectionFactor = 1.0f;
+      Vector rayOrigin(
+          pixelCoordinateToWorldCoordinate(j),
+          pixelCoordinateToWorldCoordinate(i),
+          0.0f);
+      Vector rayDirection(0.0f, 0.0f, -1.0f);
+      while(currentDepth < 10) {
+        std::pair<bool, IntersectionPoint> sphereIntersection = calculateSphereIntersection(
+            spheres,
+            rayOrigin,
+            rayDirection);
+        if(sphereIntersection.first) {
+          IntersectionPoint intersectionPoint = sphereIntersection.second;
+          Sphere intersectionSphere = intersectionPoint.first;
+          if(isShadowed(intersectionPoint.second, spheres)) {
+            pixelColor = pixelColor + Color(0.0f, 0.0f, 0.0f);
+          } else {
+            pixelColor = pixelColor + (intersectionSphere.second *
+              calculateLambert(intersectionSphere.first, intersectionPoint.second)
+              * reflectionFactor);
+          }
+          reflectionFactor = reflectionFactor * 0.6f;
+          Vector sphereNormal = (intersectionPoint.second - intersectionSphere.first).normalized();
+          float reflect = 2.0f * (rayDirection.dot(sphereNormal));
+          rayOrigin = intersectionPoint.second;
+          rayDirection = rayDirection - (sphereNormal * reflect);
+          currentDepth++;
+        } else {
+          currentDepth = 10;
+        }
+      }
+      if(pixelColor.isDefined()) {
+        *p = pixelColor.blueByte() & 0xFF; p++;
+        *p = pixelColor.greenByte() & 0xFF; p++;
+        *p = pixelColor.redByte() & 0xFF; p++;
+      } else {
+        p += 3;
+      }
+    }
+  }
+}
+{% endraw %}
+{% endhighlight %}
+
+When a ray originating from viewing plane intersects a sphere a color contributed by that sphere and adjusted by the light in the scene is added to the associated pixel. As an addition to the [previous phase][phase5] a new ray is cast from the intersection point towards ray reflection direction. This happens on lines 33 - 34. The way the reflection direction is calculated is explained below. Reflecting ray goes through the same procedure than the original ray cast from viewing plane. If it hits a sphere this intersection too will contribute to the final color of the originating pixel and another reflection occurs.
+
+![reflection direction calculation]({{ site.baseurl }}/images/reflection.png)
+
+In reflection direction calculation the sphere normal is projected onto the ray direction vector by performing a dot product between the two. This gives the magnitude of ray direction component parallel to sphere normal. Multiplying the (normalized) sphere normal by twice the magnitude and subtracting that from ray direction a direction vector can be achieved which "bounces off" the sphere surface.
+
+The reflection goes on until the reflecting ray no more intersects with an object or maximum reflection depth is reached. The maximum depth is 10 and is guarded by the `while(currentDepth < 10)` - clause.
+
+On each iteration the amount that the reflection contributes to the final pixel color is dampen. Damping coefficient is set to 0.6 in the code. `reflectionFactor` is used to calculate the amount an intersection contributes to a pixel color. This is multiplied in each iteration with the said damping coefficient: `reflectionFactor = reflectionFactor * 0.6f;`. The color contribution can be seen on lines 26 - 28 in the previous listing.
+
+The `Color` - class introduced in the [previous phase][phase5] comes handy now as every iteration contributes color to the target pixel cumulatively.
+
+Rendering below shows how spheres reflect each other. Reflection of the yellow sphere can be clearly seen on the red sphere and the top of the red sphere can be seen reflecting off the yellow sphere.
+
+![phase6]({{ site.baseurl }}/images/phase6.png)
+
+See the phase 6 source code in [github][phase6]
+
+[phase5]:      {{ site.baseurl }}/phase5/
+[phase6]:      https://github.com/uhef/mytracer/tree/phase-6
+
+
+
+
