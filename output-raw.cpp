@@ -92,7 +92,27 @@ Vector spherePoint(Vector rayOrigin, Vector rayDirection, float t) {
   return rayOrigin + (rayDirection * t);
 }
 
-std::pair<bool, IntersectionPoint> calculateSphereIntersection(
+std::pair<bool, float> raySphereIntersection(
+    const Sphere& sphere,
+    const Vector& rayOrigin,
+    const Vector& rayDirection) {
+  Vector sphereCenter = sphere.first;
+  float sphereRadius = 0.5f;
+  Vector l = sphereCenter - rayOrigin;
+  float s = l.dot(rayDirection);
+  float lSquared = l.dot(l);
+  float sphereRadiusSquared = sphereRadius * sphereRadius;
+  if (s < 0 && lSquared > sphereRadiusSquared) return std::make_pair(false, 0.0f);
+  float mSquared = lSquared - (s * s);
+  if (mSquared > sphereRadiusSquared) return std::make_pair(false, 0.0f);
+  float q = sqrt(sphereRadiusSquared - mSquared);
+  float t = 0.0;
+  if (lSquared > sphereRadiusSquared) t = s - q;
+  else t = s + q;
+  return std::make_pair(true, t);
+}
+
+std::pair<bool, IntersectionPoint> closestSphereIntersection(
     std::list<Sphere> spheres,
     Vector rayOrigin,
     Vector rayDirection) {
@@ -101,20 +121,9 @@ std::pair<bool, IntersectionPoint> calculateSphereIntersection(
   std::pair<bool, IntersectionPoint> ret = std::make_pair(
       false, std::make_pair(std::make_pair(Vector(), Color()), Vector()));
   for(Sphere sphere : spheres) {
-    Vector sphereCenter = sphere.first;
-    float sphereRadius = 0.5f;
-    Vector l = sphereCenter - rayOrigin;
-    float s = l.dot(rayDirection);
-    float lSquared = l.dot(l);
-    float sphereRadiusSquared = sphereRadius * sphereRadius;
-    if (s < 0 && lSquared > sphereRadiusSquared) continue;
-    float mSquared = lSquared - (s * s);
-    if (mSquared > sphereRadiusSquared) continue;
-    float q = sqrt(sphereRadiusSquared - mSquared);
-    float t = 0.0;
-    if (lSquared > sphereRadiusSquared) t = s - q;
-    else t = s + q;
-    if (t > 0.00001f && (!intersectionFound || t < tMin)) {
+    std::pair<bool, float> intersection = raySphereIntersection(sphere, rayOrigin, rayDirection);
+    float t = intersection.second;
+    if (intersection.first && t > 0.00001f && (!intersectionFound || t < tMin)) {
       intersectionFound = true;
       tMin = t;
       ret = std::make_pair(
@@ -135,7 +144,7 @@ float calculateLambert(Vector sphereCenter, Vector intersection) {
 bool isShadowed(Vector point, std::list<Sphere> spheres) {
   Vector lightPosition(0.5f, 0.5f, 0.0f);
   Vector lightDirection = (lightPosition - point).normalized();
-  return calculateSphereIntersection(spheres, point, lightDirection).first;
+  return closestSphereIntersection(spheres, point, lightDirection).first;
 }
 
 void renderImage(uint8_t* pixels) {
@@ -153,7 +162,7 @@ void renderImage(uint8_t* pixels) {
           0.0f);
       Vector rayDirection(0.0f, 0.0f, -1.0f);
       while(currentDepth < 10) {
-        std::pair<bool, IntersectionPoint> sphereIntersection = calculateSphereIntersection(
+        std::pair<bool, IntersectionPoint> sphereIntersection = closestSphereIntersection(
             spheres,
             rayOrigin,
             rayDirection);
