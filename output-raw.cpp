@@ -147,6 +147,14 @@ bool isShadowed(Vector point, std::list<Sphere> spheres) {
   return closestSphereIntersection(spheres, point, lightDirection).first;
 }
 
+Color contributionFromLight(IntersectionPoint intersectionPoint, Sphere intersectionSphere, std::list<Sphere> spheres) {
+  if(isShadowed(intersectionPoint.second, spheres)) {
+    return Color(0.0f, 0.0f, 0.0f);
+  } else {
+    return intersectionSphere.second * calculateLambert(intersectionSphere.first, intersectionPoint.second);
+  }
+}
+
 void renderImage(uint8_t* pixels) {
   spheres.push_back(std::make_pair(Vector(0.0f, 0.45f, -1.0f), Color(1.0f, 0.0f, 0.0f)));
   spheres.push_back(std::make_pair(Vector(0.0f, -0.45f, -1.0f), Color(0.96f, 0.94f, 0.32f)));
@@ -169,13 +177,9 @@ void renderImage(uint8_t* pixels) {
         if(sphereIntersection.first) {
           IntersectionPoint intersectionPoint = sphereIntersection.second;
           Sphere intersectionSphere = intersectionPoint.first;
-          if(isShadowed(intersectionPoint.second, spheres)) {
-            pixelColor = pixelColor + Color(0.0f, 0.0f, 0.0f);
-          } else {
-            pixelColor = pixelColor + (intersectionSphere.second *
-              calculateLambert(intersectionSphere.first, intersectionPoint.second)
-              * reflectionFactor);
-          }
+
+          pixelColor = pixelColor + (contributionFromLight(intersectionPoint, intersectionSphere, spheres) * reflectionFactor);
+
           reflectionFactor = reflectionFactor * 0.6f;
           Vector sphereNormal = (intersectionPoint.second - intersectionSphere.first).normalized();
           float reflect = 2.0f * (rayDirection.dot(sphereNormal));
