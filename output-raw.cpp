@@ -82,7 +82,7 @@ class Color {
 typedef std::pair<Vector, Color> Sphere;
 std::list<Sphere> spheres;
 typedef std::pair<Sphere, Vector> IntersectionPoint;
-int resolution = 128;
+int resolution = 512;
 
 float pixelCoordinateToWorldCoordinate(int coordinate) {
   return ((coordinate / (float)resolution) - 0.5f) * 2.0f;
@@ -197,21 +197,25 @@ void renderImage(uint8_t* pixels) {
   }
 }
 
+uint8_t roundToInt(float value) {
+  return (uint8_t)(value + 0.5);
+}
+
 int main() {
   FILE* outputFile = fopen("output.tga", "wb");
 
   uint8_t* pixels = (uint8_t*)malloc(resolution * resolution * 3);
   uint8_t* p = pixels;
-  uint8_t blue = 0;
+  float blue = 0;
   for(int i = 0; i < resolution; ++i) {
-    uint8_t green = 0;
+    float green = 0;
     for(int j = 0; j < resolution; ++j) {
-      *p = blue & 0xFF; p++;
-      *p = green & 0xFF; p++;
+      *p = roundToInt(blue) & 0xFF; p++;
+      *p = roundToInt(green) & 0xFF; p++;
       *p = 0x0; p++;
-      green += (uint8_t)(255.0f / (float)resolution);
+      green += 255.0f / (float)resolution;
     }
-    blue += (uint8_t)(255.0f / (float)resolution);
+    blue += 255.0f / (float)resolution;
   }
 
   uint8_t tgaHeader[18] = {0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
