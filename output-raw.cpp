@@ -80,9 +80,11 @@ class Color {
 };
 
 typedef std::pair<Vector, Color> Sphere;
-std::list<Sphere> spheres;
 typedef std::pair<Sphere, Vector> IntersectionPoint;
 int resolution = 512;
+
+std::list<Sphere> spheres;
+std::list<Vector> lights;
 
 float pixelCoordinateToWorldCoordinate(int coordinate) {
   return ((coordinate / (float)resolution) - 0.5f) * 2.0f;
@@ -156,6 +158,9 @@ Color contributionFromLight(IntersectionPoint intersectionPoint, Sphere intersec
 void renderImage(uint8_t* pixels) {
   spheres.push_back(std::make_pair(Vector(0.0f, 0.45f, -1.0f), Color(1.0f, 0.0f, 0.0f)));
   spheres.push_back(std::make_pair(Vector(0.0f, -0.45f, -1.0f), Color(0.96f, 0.94f, 0.32f)));
+  lights.push_back(Vector(0.5f, 0.5f, 0.0f));
+  lights.push_back(Vector(-0.5f, -0.5f, 0.0f));
+
   uint8_t* p = pixels;
   for(int i = 0; i < resolution; ++i) {
     for(int j = 0; j < resolution; ++j) {
@@ -175,10 +180,9 @@ void renderImage(uint8_t* pixels) {
         if(sphereIntersection.first) {
           IntersectionPoint intersectionPoint = sphereIntersection.second;
           Sphere intersectionSphere = intersectionPoint.first;
-
-          Vector lightPosition(0.5f, 0.5f, 0.0f);
-          pixelColor = pixelColor + (contributionFromLight(intersectionPoint, intersectionSphere, spheres, lightPosition) * reflectionFactor);
-
+          for(Vector light : lights) {
+            pixelColor = pixelColor + (contributionFromLight(intersectionPoint, intersectionSphere, spheres, light) * reflectionFactor);
+          }
           reflectionFactor = reflectionFactor * 0.6f;
           Vector sphereNormal = (intersectionPoint.second - intersectionSphere.first).normalized();
           float reflect = 2.0f * (rayDirection.dot(sphereNormal));
