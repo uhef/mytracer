@@ -134,24 +134,22 @@ std::pair<bool, IntersectionPoint> closestSphereIntersection(
   return ret;
 }
 
-float calculateLambert(Vector sphereCenter, Vector intersection) {
-  Vector lightPosition(0.5f, 0.5f, 0.0f);
+float calculateLambert(Vector sphereCenter, Vector intersection, Vector lightPosition) {
   Vector lightDirection = (lightPosition - intersection).normalized();
   Vector sphereNormal = (intersection - sphereCenter).normalized();
   return std::max(0.0f, lightDirection.dot(sphereNormal));
 }
 
-bool isShadowed(Vector point, std::list<Sphere> spheres) {
-  Vector lightPosition(0.5f, 0.5f, 0.0f);
+bool isShadowed(Vector point, std::list<Sphere> spheres, Vector lightPosition) {
   Vector lightDirection = (lightPosition - point).normalized();
   return closestSphereIntersection(spheres, point, lightDirection).first;
 }
 
-Color contributionFromLight(IntersectionPoint intersectionPoint, Sphere intersectionSphere, std::list<Sphere> spheres) {
-  if(isShadowed(intersectionPoint.second, spheres)) {
+Color contributionFromLight(IntersectionPoint intersectionPoint, Sphere intersectionSphere, std::list<Sphere> spheres, Vector lightPosition) {
+  if(isShadowed(intersectionPoint.second, spheres, lightPosition)) {
     return Color(0.0f, 0.0f, 0.0f);
   } else {
-    return intersectionSphere.second * calculateLambert(intersectionSphere.first, intersectionPoint.second);
+    return intersectionSphere.second * calculateLambert(intersectionSphere.first, intersectionPoint.second, lightPosition);
   }
 }
 
@@ -178,7 +176,8 @@ void renderImage(uint8_t* pixels) {
           IntersectionPoint intersectionPoint = sphereIntersection.second;
           Sphere intersectionSphere = intersectionPoint.first;
 
-          pixelColor = pixelColor + (contributionFromLight(intersectionPoint, intersectionSphere, spheres) * reflectionFactor);
+          Vector lightPosition(0.5f, 0.5f, 0.0f);
+          pixelColor = pixelColor + (contributionFromLight(intersectionPoint, intersectionSphere, spheres, lightPosition) * reflectionFactor);
 
           reflectionFactor = reflectionFactor * 0.6f;
           Vector sphereNormal = (intersectionPoint.second - intersectionSphere.first).normalized();
