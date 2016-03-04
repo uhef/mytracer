@@ -79,6 +79,11 @@ class Color {
     uint8_t blueByte() const { return blue * 0xFF; }
 };
 
+struct Material {
+  float specValue;
+  float specPower;
+};
+
 typedef std::pair<Vector, Color> Sphere;
 typedef std::pair<Sphere, Vector> IntersectionPoint;
 int resolution = 512;
@@ -142,20 +147,35 @@ float calculateLambert(Vector sphereCenter, Vector intersection, Vector lightPos
   return std::max(0.0f, lightDirection.dot(sphereNormal));
 }
 
+float calculatePhong(Vector sphereCenter, Vector intersection, Vector lightPosition, Vector rayOrigin, Material sphereMaterial) {
+  float phongCoefficient = 1.0f;
+  Vector sphereNormal = (intersection - sphereCenter).normalized();
+  Vector lightDirection = (lightPosition - intersection).normalized();
+  Vector viewDirection = (rayOrigin - intersection).normalized();
+  float reflect = 2.0f * (lightDirection.dot(sphereNormal));
+  Vector phongDirection = lightDirection - (sphereNormal * reflect);
+  float phongTerm = std::max(0.0f, phongDirection.dot(viewDirection));
+  return sphereMaterial.specValue * powf(phongTerm, sphereMaterial.specPower) * phongCoefficient;
+}
+
 bool isShadowed(Vector point, std::list<Sphere> spheres, Vector lightPosition) {
   Vector lightDirection = (lightPosition - point).normalized();
   return closestSphereIntersection(spheres, point, lightDirection).first;
 }
 
-Color contributionFromLight(IntersectionPoint intersectionPoint, Sphere intersectionSphere, std::list<Sphere> spheres, Vector lightPosition) {
+Color contributionFromLight(IntersectionPoint intersectionPoint, Sphere intersectionSphere, std::list<Sphere> spheres, Vector lightPosition, Vector rayOrigin, Material sphereMaterial) {
   if(isShadowed(intersectionPoint.second, spheres, lightPosition)) {
     return Color(0.0f, 0.0f, 0.0f);
   } else {
-    return intersectionSphere.second * calculateLambert(intersectionSphere.first, intersectionPoint.second, lightPosition);
+    // Calculate phong here. We are going to need viewray direction as a new parameter
+    float phongTerm = calculatePhong(intersectionSphere.first, intersectionPoint.second, lightPosition, rayOrigin, sphereMaterial);
+    float lambertTerm = calculateLambert(intersectionSphere.first, intersectionPoint.second, lightPosition);
+    return (intersectionSphere.second * lambertTerm) + (intersectionSphere.second * phongTerm);
   }
 }
 
 void renderImage(uint8_t* pixels) {
+  Material sphereMaterial = { 1.0, 1.0 };
   spheres.push_back(std::make_pair(Vector(0.0f, 0.45f, -1.0f), Color(1.0f, 0.0f, 0.0f)));
   spheres.push_back(std::make_pair(Vector(0.0f, -0.45f, -1.0f), Color(0.96f, 0.94f, 0.32f)));
   lights.push_back(Vector(0.5f, 0.5f, 0.0f));
@@ -181,7 +201,7 @@ void renderImage(uint8_t* pixels) {
           IntersectionPoint intersectionPoint = sphereIntersection.second;
           Sphere intersectionSphere = intersectionPoint.first;
           for(Vector light : lights) {
-            pixelColor = pixelColor + (contributionFromLight(intersectionPoint, intersectionSphere, spheres, light) * reflectionFactor);
+            pixelColor = pixelColor + (contributionFromLight(intersectionPoint, intersectionSphere, spheres, light, rayOrigin, sphereMaterial) * reflectionFactor);
           }
           reflectionFactor = reflectionFactor * 0.6f;
           Vector sphereNormal = (intersectionPoint.second - intersectionSphere.first).normalized();
