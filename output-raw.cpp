@@ -150,7 +150,7 @@ float calculatePhong(Vector sphereCenter, Vector intersection, Vector lightPosit
   float phongCoefficient = 1.0f;
   Vector sphereNormal = (intersection - sphereCenter).normalized();
   Vector lightDirection = (lightPosition - intersection).normalized();
-  Vector viewDirection = (rayOrigin - intersection).normalized();
+  Vector viewDirection = (intersection - rayOrigin).normalized();
   float reflect = 2.0f * (lightDirection.dot(sphereNormal));
   Vector phongDirection = lightDirection - (sphereNormal * reflect);
   float phongTerm = std::max(0.0f, phongDirection.dot(viewDirection));
