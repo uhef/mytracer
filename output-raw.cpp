@@ -99,7 +99,7 @@ Vector spherePoint(Vector rayOrigin, Vector rayDirection, float t) {
   return rayOrigin + (rayDirection * t);
 }
 
-std::pair<bool, float> raySphereIntersection(
+std::vector<float> raySphereIntersections(
     const Sphere& sphere,
     const Vector& rayOrigin,
     const Vector& rayDirection) {
@@ -109,14 +109,12 @@ std::pair<bool, float> raySphereIntersection(
   float s = l.dot(rayDirection);
   float lSquared = l.dot(l);
   float sphereRadiusSquared = sphereRadius * sphereRadius;
-  if (s < 0 && lSquared > sphereRadiusSquared) return std::make_pair(false, 0.0f);
+  if (s < 0 && lSquared > sphereRadiusSquared) return {};
   float mSquared = lSquared - (s * s);
-  if (mSquared > sphereRadiusSquared) return std::make_pair(false, 0.0f);
+  if (mSquared > sphereRadiusSquared) return {};
   float q = sqrt(sphereRadiusSquared - mSquared);
   float t = 0.0;
-  if (lSquared > sphereRadiusSquared) t = s - q;
-  else t = s + q;
-  return std::make_pair(true, t);
+  return { s - q, s + q };
 }
 
 std::pair<bool, IntersectionPoint> closestSphereIntersection(
@@ -128,14 +126,15 @@ std::pair<bool, IntersectionPoint> closestSphereIntersection(
   std::pair<bool, IntersectionPoint> ret = std::make_pair(
       false, std::make_pair(std::make_pair(Vector(), Color()), Vector()));
   for(Sphere sphere : spheres) {
-    std::pair<bool, float> intersection = raySphereIntersection(sphere, rayOrigin, rayDirection);
-    float t = intersection.second;
-    if (intersection.first && t > 0.00001f && (!intersectionFound || t < tMin)) {
-      intersectionFound = true;
-      tMin = t;
-      ret = std::make_pair(
-          true,
-          std::make_pair(sphere, spherePoint(rayOrigin, rayDirection, t)));
+    std::vector<float> intersections = raySphereIntersections(sphere, rayOrigin, rayDirection);
+    for(float t : intersections) {
+      if (t > 0.00001f && (!intersectionFound || t < tMin)) {
+        intersectionFound = true;
+        tMin = t;
+        ret = std::make_pair(
+            true,
+            std::make_pair(sphere, spherePoint(rayOrigin, rayDirection, t)));
+      }
     }
   }
   return ret;
