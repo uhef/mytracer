@@ -173,10 +173,15 @@ Color contributionFromLight(IntersectionPoint intersectionPoint, Sphere intersec
   }
 }
 
+Color ambientLight(Sphere intersectionSphere) {
+  float ambientStrength = 0.1f;
+  return intersectionSphere.second * ambientStrength;
+}
+
 void renderImage(uint8_t* pixels) {
   Material sphereMaterial = { 1.0, 10.0 };
-  spheres.push_back(std::make_pair(Vector(0.0f, 0.45f, -1.0f), Color(1.0f, 0.0f, 0.0f)));
-  spheres.push_back(std::make_pair(Vector(0.0f, -0.45f, -1.0f), Color(0.96f, 0.94f, 0.32f)));
+  spheres.push_back(std::make_pair(Vector(0.0f, 0.5f, -1.0f), Color(1.0f, 0.0f, 0.0f)));
+  spheres.push_back(std::make_pair(Vector(0.0f, -0.5f, -1.0f), Color(0.96f, 0.94f, 0.32f)));
   lights.push_back(Vector(0.5f, 0.5f, 0.0f));
   lights.push_back(Vector(-0.5f, -1.0f, -0.2f));
 
@@ -196,6 +201,11 @@ void renderImage(uint8_t* pixels) {
             spheres,
             rayOrigin,
             rayDirection);
+        if(sphereIntersection.first && currentDepth == 0) {
+          IntersectionPoint intersectionPoint = sphereIntersection.second;
+          Sphere intersectionSphere = intersectionPoint.first;
+          pixelColor = pixelColor + ambientLight(intersectionSphere);
+        }
         if(sphereIntersection.first) {
           IntersectionPoint intersectionPoint = sphereIntersection.second;
           Sphere intersectionSphere = intersectionPoint.first;
