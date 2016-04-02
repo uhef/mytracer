@@ -151,10 +151,9 @@ float calculatePhong(Vector sphereCenter, Vector intersection, Vector lightPosit
   Vector sphereNormal = (intersection - sphereCenter).normalized();
   Vector lightDirection = (lightPosition - intersection).normalized();
   Vector viewDirection = (intersection - rayOrigin).normalized();
-  float reflect = 2.0f * (lightDirection.dot(sphereNormal));
-  Vector phongDirection = lightDirection - (sphereNormal * reflect);
-  float phongTerm = std::max(0.0f, phongDirection.dot(viewDirection));
-  return sphereMaterial.specValue * powf(phongTerm, sphereMaterial.specPower) * phongCoefficient;
+  Vector blinnDirection = (lightDirection - viewDirection).normalized();
+  float blinnTerm = std::max(blinnDirection.dot(sphereNormal), 0.0f);
+  return sphereMaterial.specValue * powf(blinnTerm, sphereMaterial.specPower) * phongCoefficient;
 }
 
 bool isShadowed(Vector point, std::list<Sphere> spheres, Vector lightPosition) {
@@ -179,7 +178,7 @@ Color ambientLight(Sphere intersectionSphere) {
 }
 
 void renderImage(uint8_t* pixels) {
-  Material sphereMaterial = { 1.0, 10.0 };
+  Material sphereMaterial = { 3.0, 30.0 };
   spheres.push_back(std::make_pair(Vector(0.0f, 0.5f, -1.0f), Color(1.0f, 0.0f, 0.0f)));
   spheres.push_back(std::make_pair(Vector(0.0f, -0.5f, -1.0f), Color(0.96f, 0.94f, 0.32f)));
   lights.push_back(Vector(0.5f, 0.5f, 0.0f));
