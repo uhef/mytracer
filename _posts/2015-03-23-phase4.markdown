@@ -6,6 +6,8 @@ categories:
 ---
 As mentioned in [previous phase][phase3] the ray-sphere intersection function (`calculateSphereIntersections`) returned a list of intersection points even though it is enough to be aware of the closest intersection point only. Also, as pointed out by [Boojum][boojum] in the related [reddit thread][reddit] dynamic memory allocation in ray tracer inner loop hinders performance unnecessarily.
 
+<!-- break -->
+
 In order to tackle this and more the ray-sphere intersection function was revisited:
 {% highlight c++ linenos %}
 {% raw %}

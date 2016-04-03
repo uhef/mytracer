@@ -6,6 +6,8 @@ categories:
 ---
 First thing is to get an image rendered. I selected [TARGA][TARGA] since it seems like an easy format and supports uncompressed, raw binary. Pixel content is just a gradient from black to full blue-green in a whopping 32 x 32 resolution.
 
+<!-- break -->
+
 {% highlight c++ linenos %}
 {% raw %}
 int main() {

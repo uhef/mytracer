@@ -1,11 +1,13 @@
 ---
 layout: post
-title:  "Phase 7 - Blinn-Phong shading"
+title:  "Phase 7 - Blinn-Phong lighting"
 date:   2016-04-02 18:56:00
 categories:
 ---
 
 In this phase we introduce ambient light and specular highlights using Blinn-Phong algorithm.
+
+<!-- break -->
 
 ![blinn-phong calculation]({{ site.baseurl }}/images/blinn-phong.jpg)
 

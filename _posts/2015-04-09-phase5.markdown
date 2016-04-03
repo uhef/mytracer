@@ -6,6 +6,8 @@ categories:
 ---
 Until now there has only been one sphere in the scene at a time. In this phase second sphere is introduced. The solution scales to any amount of spheres though.
 
+<!-- break -->
+
 Since there can be any amount of spheres in the scene the ray-sphere intersection has to be revisited. Now the ray can intersect with any of the spheres in the scene. The core of the ray-sphere intersection still exists unchanged (lines 12 - 22) but the algorithm iterates over all objects in the scene and returns the closest intersection to the viewing plane. `tMin` is the smallest distance from viewing plane to any sphere intersection point.
 
 The odd-looking comparison `t > 0.00001f` on line 23 relates to shadows. Since there are now multiple objects in the scene at once it can be that one object is between another object and light source thus casting a shadow on the object. This is clarified further below.

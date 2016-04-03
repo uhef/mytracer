@@ -4,9 +4,11 @@ title:  "Phase 2 - First Rays"
 date:   2015-03-08 20:54:46
 categories:
 ---
-I decided to follow this [tutorial][tutorial] on the first steps of implementing the  ray tracer.
+I decided to follow this [tutorial][tutorial] on the first steps of implementing the ray tracer.
 
 First thing to do was to render one simple object on the image by casting rays.
+
+<!-- break -->
 
 For this a simplest possible object was added to the scene - a sphere. The sphere is located at (0, 0, 1).
 

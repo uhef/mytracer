@@ -6,6 +6,8 @@ categories:
 ---
 In order to make the red blob in the [previous phase][phase2] look like a sphere a rudimentary lighting model is in order.
 
+<!-- break -->
+
 To keep it simple I decided to go with [Lambertian reflectance][lambertian]. In lambertian reflectance the reflection depends on the angle of the surface normal vector at the incident point and light direction from the incident point towards the light.
 
 This code snippet in [phase 3][phase3] calculates the Lambertian coefficient:
