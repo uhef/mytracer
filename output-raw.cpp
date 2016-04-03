@@ -147,13 +147,12 @@ float calculateLambert(Vector sphereCenter, Vector intersection, Vector lightPos
 }
 
 float calculatePhong(Vector sphereCenter, Vector intersection, Vector lightPosition, Vector rayOrigin, Material sphereMaterial) {
-  float phongCoefficient = 1.0f;
   Vector sphereNormal = (intersection - sphereCenter).normalized();
   Vector lightDirection = (lightPosition - intersection).normalized();
   Vector viewDirection = (intersection - rayOrigin).normalized();
   Vector blinnDirection = (lightDirection - viewDirection).normalized();
   float blinnTerm = std::max(blinnDirection.dot(sphereNormal), 0.0f);
-  return sphereMaterial.specValue * powf(blinnTerm, sphereMaterial.specPower) * phongCoefficient;
+  return sphereMaterial.specValue * powf(blinnTerm, sphereMaterial.specPower);
 }
 
 bool isShadowed(Vector point, std::list<Sphere> spheres, Vector lightPosition) {
@@ -165,7 +164,6 @@ Color contributionFromLight(IntersectionPoint intersectionPoint, Sphere intersec
   if(isShadowed(intersectionPoint.second, spheres, lightPosition)) {
     return Color(0.0f, 0.0f, 0.0f);
   } else {
-    // Calculate phong here. We are going to need viewray direction as a new parameter
     float phongTerm = calculatePhong(intersectionSphere.first, intersectionPoint.second, lightPosition, rayOrigin, sphereMaterial);
     float lambertTerm = calculateLambert(intersectionSphere.first, intersectionPoint.second, lightPosition);
     return (intersectionSphere.second * lambertTerm) + (intersectionSphere.second * phongTerm);
