@@ -178,11 +178,11 @@ Color ambientLight(Sphere intersectionSphere) {
 }
 
 void renderImage(uint8_t* pixels) {
-  Material sphereMaterial = { 3.0, 30.0 };
+  Material sphereMaterial = { 5.0, 100.0 };
   spheres.push_back(std::make_pair(Vector(0.0f, 0.5f, -1.0f), Color(1.0f, 0.0f, 0.0f)));
   spheres.push_back(std::make_pair(Vector(0.0f, -0.5f, -1.0f), Color(0.96f, 0.94f, 0.32f)));
   lights.push_back(Vector(0.5f, 0.5f, 0.0f));
-  lights.push_back(Vector(-0.5f, -1.0f, -0.2f));
+  lights.push_back(Vector(-3.0f, -0.0f, -2.0f));
 
   uint8_t* p = pixels;
   for(int i = 0; i < resolution; ++i) {
