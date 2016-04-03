@@ -1,0 +1,84 @@
+---
+layout: post
+title:  "Phase 7 - Blinn-Phong shading"
+date:   2016-04-02 18:56:00
+categories:
+---
+
+In this phase we introduce ambient light and specular highlights using Blinn-Phong algorithm.
+
+![blinn-phong calculation]({{ site.baseurl }}/images/blinn-phong.jpg)
+
+Unlike diffuse light term (Lambert algorithm) introduced in [phase 3][phase3] the specular highlight does not depend only on relation between surface normal and light source but also on view vector.
+
+To achieve this we calculate blinn vector *b* which is combination of light vector *l* and view vector *v*. Once the blinn vector *b* has been calculated we calculate the dot product between it and sphere normal to determine blinn term, which determines the strength of specular highlight at the point where the cast ray intersects with sphere.
+
+{% highlight c++ linenos %}
+{% raw %}
+Color contributionFromLight(IntersectionPoint intersectionPoint, Sphere intersectionSphere, std::list<Sphere> spheres, Vector lightPosition, Vector rayOrigin, Material sphereMaterial) {
+  if(isShadowed(intersectionPoint.second, spheres, lightPosition)) {
+    return Color(0.0f, 0.0f, 0.0f);
+  } else {
+    float phongTerm = calculatePhong(intersectionSphere.first, intersectionPoint.second, lightPosition, rayOrigin, sphereMaterial);
+    float lambertTerm = calculateLambert(intersectionSphere.first, intersectionPoint.second, lightPosition);
+    return (intersectionSphere.second * lambertTerm) + (intersectionSphere.second * phongTerm);
+  }
+}
+{% endraw %}
+{% endhighlight %}
+
+Combined contribution of diffuse (lambert) and specular (blinn-phong) light on the intersection point is provided by function `contributionFromLight` that provides contribution from one point light on the intersection point.
+
+This differs from the [previous phase][phase6] in few ways: firstly the light contribution is refactored to its own function out of `renderImage` function. Secondly the function now calculates contribution of both lambert and phong shading and thirdly extra parameters are provided to accommodate phong shading. These are `rayOrigin` which is needed in order to calculate view vector *v* for blinn-phong as well as sphere material properties needed for blinn-phong as well.
+
+`calculateLambert` hasn't changed from [phase 6][phase6].
+
+{% highlight c++ linenos %}
+{% raw %}
+float calculatePhong(Vector sphereCenter, Vector intersection, Vector lightPosition, Vector rayOrigin, Material sphereMaterial) {
+  Vector sphereNormal = (intersection - sphereCenter).normalized();
+  Vector lightDirection = (lightPosition - intersection).normalized();
+  Vector viewDirection = (intersection - rayOrigin).normalized();
+  Vector blinnDirection = (lightDirection - viewDirection).normalized();
+  float blinnTerm = std::max(blinnDirection.dot(sphereNormal), 0.0f);
+  return sphereMaterial.specValue * powf(blinnTerm, sphereMaterial.specPower);
+}
+{% endraw %}
+{% endhighlight %}
+
+`calculatePhong` implements the blinn-phong algorithm described above. Its important to notice the usage of specular value and specular power properties of the sphere material passed in. These properties can be used to adjust specular highlight. As `blinnTerm` is always between `0.0f` and `1.0f` the exponent `specPower` controls how sharp the specular highlight is. Specular value `specValue` controls the strength of the specular highlight.
+
+Contributions from lights in a physical world scatter in complicated ways. [Global illumination algorithms][global-illumination] aim to replicate this phenomena. In the absence of a more accurate global illumination algorithm following snippet of `renderImage` adds ambient light into the scene. This mechanism of adding constant ambient light to everything is used especially in real-time graphics to avoid computationally intesive algorithms:
+
+{% highlight c++ linenos %}
+{% raw %}
+if(sphereIntersection.first && currentDepth == 0) {
+  IntersectionPoint intersectionPoint = sphereIntersection.second;
+  Sphere intersectionSphere = intersectionPoint.first;
+  pixelColor = pixelColor + ambientLight(intersectionSphere);
+}
+{% endraw %}
+{% endhighlight %}
+
+`ambientLight` function in its simplicity adds a constant amount of light to every single ray cast that intersects with an object in the scene:
+
+{% highlight c++ linenos %}
+{% raw %}
+Color ambientLight(Sphere intersectionSphere) {
+  float ambientStrength = 0.1f;
+  return intersectionSphere.second * ambientStrength;
+}
+{% endraw %}
+{% endhighlight %}
+
+With these additions we have effectively implemented a lighting model that is used for instance by a fixed pipeline OpenGL (OpenGL 1.x) implementation.
+
+![phase7]({{ site.baseurl }}/images/phase7.png)
+
+See the phase 7 source code in [github][phase7]
+
+[phase3]:              {{ site.baseurl }}/phase3/
+[phase6]:              {{ site.baseurl }}/phase6/
+[global-illumination]: https://en.wikipedia.org/wiki/Global_illumination
+[phase7]:              https://github.com/uhef/mytracer/tree/phase-7
+
